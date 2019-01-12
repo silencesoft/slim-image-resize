@@ -17,8 +17,10 @@ namespace Slim\Middleware;
 
 use Intervention\Image\Image;
 use Slim\Middleware\ImageResize\DefaultMutator;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 
-class ImageResize extends \Slim\Middleware
+class ImageResize
 {
 
     protected $options;
@@ -43,6 +45,51 @@ class ImageResize extends \Slim\Middleware
         /* TODO: Use proper DI. */
         $this->mutator = $this->options["mutator"];
         unset($this->options["mutator"]);
+    }
+
+    public function __invoke(Request $request, Response $response, $next)
+    {
+
+        // $folder   = $request->getRootUri();
+        // $resource = $request->getResourceUri();
+
+        $target   = $request->getUri()->getPath();
+
+        if ($matched = $this->mutator->parse($target)) {
+            /* Extract array variables to current symbol table */
+            extract($matched);
+        };
+
+         if ($matched && $this->allowed(array("extension" => $extension, "size" => $size, "signature" => $signature))) {
+
+            $this->mutator->execute();
+
+            /* When requested save image to cache folder. */
+            if ($this->options["cache"]) {
+                /* TODO: Make this pretty. */
+                $cache = str_replace('index.php', '', $_SERVER["SCRIPT_FILENAME"]).
+                    $this->options["cache"] . '/' . $target;
+
+                $dir = pathinfo($cache, PATHINFO_DIRNAME);
+                if (false === is_dir($dir)) {
+                    mkdir($dir, 0777, true);
+                }
+                $this->mutator->save($cache);
+            }
+
+            $newResponse = $response->withHeader('Content-type',$this->mutator->mime());
+            $newStream = new \GuzzleHttp\Psr7\LazyOpenStream($cache, 'r');
+            $response->write($newStream);
+
+            return $newResponse;
+        } else {
+            // $response->getBody()->write('BEFORE');
+            $response = $next($request, $response);
+
+            // $response->getBody()->write('AFTER');
+            return $response;
+        }
+
     }
 
     public function call()
