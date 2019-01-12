@@ -1,4 +1,7 @@
-# Image Resize Middleware for Slim
+# Image Resize Middleware for Slim 3
+
+### Note
+*This is an update to original project tuupola/slim-image-resize to work with slim 3.*
 
 This middleware implements automatic image resizing based on image filename.
 
@@ -13,7 +16,7 @@ This middleware implements automatic image resizing based on image filename.
 You can install latest version using [composer](https://getcomposer.org/).
 
 ```
-$ composer require tuupola/slim-image-resize
+$ composer require tuupola/slim-image-resize @dev
 ```
 
 ## Configuration
